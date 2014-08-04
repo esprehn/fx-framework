@@ -1,9 +1,46 @@
 <link rel="import" href="fx-observer.html">
 
 <script>
+"use strict";
+
 describe("fx-observer", function() {
-    it("should do the thing", function() {
-        var observer = new FxObserver();
+    var container;
+
+    beforeEach(function() {
+        container = document.body.appendChild(document.createElement("div"));
+    });
+
+    afterEach(function() {
+        container.remove();
+        container = null;
+    });
+
+    it("should broadcast events to instances", function() {
+        var events = [];
+        var observer1 = createObserver("example");
+        var observer2 = createObserver("example");
+
+        function createObserver(type) {
+            var observer = new FxObserver();
+            observer.for = type;
+            container.appendChild(observer);
+            return observer;
+        }
+
+        function listener(event) {
+            events.push(event);
+            assert.ok(event.detail);
+            assert.ok(event.detail.data, "this is data");
+        }
+
+        observer1.addEventListener("notify", listener);
+        observer2.addEventListener("notify", listener);
+
+        observer1.notify({data: "this is data"});
+
+        assert.equal(events.length, 2);
+        assert.equal(events[0].target, observer1);
+        assert.equal(events[1].target, observer2);
     });
 });
 </script>
