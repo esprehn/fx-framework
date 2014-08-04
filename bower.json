@@ -5,10 +5,11 @@
     "Elliott Sprehn <esprehn@chromium.org>"
   ],
   "description": "A framework for rapidly building polymer apps.",
-  "license": "Chromium License",
+  "license": "https://chromium.googlesource.com/chromium/src.git/+/master/LICENSE",
   "private": true,
   "dependencies": {
-    "polymer": "Polymer/polymer#master"
+    "polymer": "Polymer/polymer#master",
+    "sugar": "andrewplummer/sugar#~1.4.1"
   },
   "ignore": [
     "**/.*",

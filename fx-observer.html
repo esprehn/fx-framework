@@ -69,9 +69,11 @@
         },
     });
 
-    // Static API
-    FxObserver.notify = notify;
-    FxObserver.notifyAsync = notifyAsync;
+    document.addEventListener("polymer-ready", function() {
+        // Static API
+        FxObserver.notify = notify;
+        FxObserver.notifyAsync = notifyAsync;
+    });
 })();
 </script>
 </polymer-element>
