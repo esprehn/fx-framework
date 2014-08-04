@@ -1,0 +1,75 @@
+<!--
+    Sends and observes notifications by broadcasting notify events.
+
+    Usage:
+
+    <fx-observer for="example" on-notify="{{ handleHashChange }}"></fx-observer>
+
+    FxObserver.notify("example", relatedData);
+
+    FxObserver.notifyAsync("example", relatedData).then(function() {
+        // ...
+    });
+-->
+<polymer-element name="fx-observer" constructor="FxObserver" attributes="for">
+<script>
+(function() {
+    var instances = {};
+
+    function registerInstance(object, type) {
+        instances[type] = instances[type] || [];
+        instances[type].add(object);
+    }
+
+    function unregisterInstance(object, type) {
+        if (!instances[type])
+            return;
+        instances[type].remove(object);
+    }
+
+    function notify(type, data) {
+        var receivers = instances[type] || [];
+        for (var i = 0; i < receivers.length; ++i)
+            receivers[i].fire("notify", data);
+    }
+
+    function notifyAsync(type, data) {
+        return Promise.resolve().then(function() {
+            notify(type, data);
+        });
+    }
+
+    Polymer({
+        created: function() {
+            this.for = "";
+            this.active = false;
+            this.style.display = "none";
+        },
+        forChanged: function(oldValue, newValue) {
+            if (!this.active)
+                return;
+            unregisterInstance(this, oldValue);
+            registerInstance(this, newValue);
+        },
+        attached: function() {
+            registerInstance(this, this.for);
+            this.active = true;
+        },
+        detached: function() {
+            unregisterInstance(this, this.for);
+            this.active = false;
+        },
+        notify: function(data) {
+            notify(this.for, data);
+        },
+        notifyAsync: function(data) {
+            return notifyAsync(this.for, data);
+        },
+    });
+
+    // Static API
+    FxObserver.notify = notify;
+    FxObserver.notifyAsync = notifyAsync;
+})();
+</script>
+</polymer-element>
