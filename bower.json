@@ -1,0 +1,17 @@
+{
+  "name": "fx-framework",
+  "version": "0.0.0",
+  "authors": [
+    "Elliott Sprehn <esprehn@chromium.org>"
+  ],
+  "description": "A framework for rapidly building polymer apps.",
+  "license": "Chromium License",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
