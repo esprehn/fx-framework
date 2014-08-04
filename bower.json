@@ -7,6 +7,9 @@
   "description": "A framework for rapidly building polymer apps.",
   "license": "Chromium License",
   "private": true,
+  "dependencies": {
+    "polymer": "Polymer/polymer#master"
+  },
   "ignore": [
     "**/.*",
     "node_modules",
