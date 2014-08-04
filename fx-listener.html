@@ -1,0 +1,18 @@
+<!--
+    Listens for external elements and notifies locally. Target can be any window
+    accessible property path, for example "document" or "screen.orientation". By
+    default if no path is specified events are listened for on the window
+    itself.
+
+    The presence of an attribute that starts with "on-" will trigger a listener
+    on the target for the event name following the dash. This works implicitly
+    in polymer's declarative event handlers. If you're not using polymer, or are
+    creating an element programatically you can add an attribute
+    "on-{eventname}" to the element with no value.
+
+    Usage:
+
+    <fx-listener on-hashchange="{{ handleHashChange }}"></fx-listener>
+-->
+<polymer-element name="fx-listener" constructor="FxListener">
+</polymer-element>

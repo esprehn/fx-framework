@@ -1,0 +1,22 @@
+<!--
+    Schedules work to execute, will run the passed function, and replace it
+    with the newly returned function, repeatedly until the work runs out or
+    the workLimit is reached in ms. If the limit is reached and there are still
+    functions to run then it will schedule a completion with setTimeout.
+
+    Usage:
+
+    // asyncForEach is similar to:
+
+    var i = 0;
+    var array = [ ... ];
+    function nextElement() {
+        if (i >= array.length)
+            return;
+        process(array[i++]);
+        return nextElement;
+    }
+    this.$.taskQueue.scheduleWork(nextElement);
+-->
+<polymer-element name="fx-task-queue" constructor="FxTaskQueue">
+</polymer-element>
