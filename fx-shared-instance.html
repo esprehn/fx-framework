@@ -8,18 +8,18 @@
 
     Usage:
 
-    <polymer-element name="app-example" extends="{{ fx-shared-instance }}">
+    <polymer-element name="app-example" extends="fx-shared-instance">
         <template>
             ..
         </template>
         <script>
             Polymer({
                 doStuff: function() {
-                    this.notifyInstances({
+                    this.notifyInstances("updateRect", {
                         data: // ...
                     });
                 },
-                notified: function(event, data) {
+                updateRect: function(data) {
                     // do something with the notification.
                 },
             });
@@ -29,4 +29,59 @@
 <link href="../polymer/polymer.html" rel="import">
 
 <polymer-element name="fx-shared-instance" constructor="FxSharedInstance">
+<script>
+(function() {
+    var instances = {};
+
+    function registerInstance(object, type) {
+        instances[type] = instances[type] || [];
+        instances[type].add(object);
+    }
+
+    function unregisterInstance(object, type) {
+        if (!instances[type])
+            return;
+        instances[type].remove(object);
+    }
+
+    function notify(method, data) {
+        var receivers = instances[type] || [];
+        for (var i = 0; i < receivers.length; ++i)
+            receivers[i][method](data);
+    }
+
+    function notifyAsync(method, data) {
+        return Promise.resolve().then(function() {
+            notify(type, method, data);
+        });
+    }
+
+    Polymer({
+        created: function() {
+            this.instanceType = this.tagName;
+        },
+        attached: function() {
+            registerInstance(this, this.instanceType);
+        },
+        detached: function() {
+            unregisterInstance(this, this.instanceType);
+        },
+        notifyInstances: function(method, data) {
+            return notify(this.instanceType, method, data);
+        },
+        notifyInstancesAsync: function(method, data) {
+            return notifyAsync(this.instanceType, method, data);
+        },
+        getInstances: function() {
+            return instances[this.instanceType];
+        },
+    });
+
+    document.addEventListener("polymer-ready", function() {
+        // Static API
+        FxSharedInstance.notify = notify;
+        FxSharedInstance.notifyAsync = notifyAsync;
+    });
+})();
+</script>
 </polymer-element>

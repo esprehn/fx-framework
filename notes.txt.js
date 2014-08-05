@@ -35,7 +35,7 @@ class FxObserver extends HTMLElement {
 
     Usage:
 
-    <polymer-element name="app-example" extends="{{ fx-shared-instance }}">
+    <polymer-element name="app-example" extends="fx-shared-instance">
         <template>
             ..
         </template>
@@ -46,7 +46,7 @@ class FxObserver extends HTMLElement {
                         data: // ...
                     });
                 },
-                notified: function(event, data) {
+                notified: function(data) {
                     // do something with the notification.
                 },
             });
@@ -57,15 +57,14 @@ class FxObserver extends HTMLElement {
 class FxSharedInstance extends HTMLElement {
     string instanceType;
 
-    void notifyInstances(optional Object data);
-    Promise<void> notifyInstancesAsync(optional Object data);
+    void notifyInstances(string method, optional Object data);
+    Promise<void> notifyInstancesAsync(string method, optional Object data);
 
-    void notified(optional Object data);
     Array getInstances();
 
     static getInstances(string instanceType);
-    static void notify(string tagName, optional Object data);
-    static Promise<void> notifyAsync(string instanceType, option Object data);
+    static void notify(string instanceType, string method, optional Object data);
+    static Promise<void> notifyAsync(string instanceType, string method, optional Object data);
 }
 
 /*
