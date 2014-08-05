@@ -50,8 +50,13 @@
 
     function notify(type, method, data) {
         var receivers = getInstances(type);
-        for (var i = 0; i < receivers.length; ++i)
-            receivers[i][method](data);
+        for (var i = 0; i < receivers.length; ++i) {
+            try {
+                receivers[i][method](data);
+            } catch (e) {
+                console.log("Failed notification", type, method, e);
+            }
+        }
     }
 
     function notifyAsync(type, method, data) {

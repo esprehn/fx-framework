@@ -39,8 +39,13 @@
 
     function notify(type, data) {
         var receivers = instances[type] || [];
-        for (var i = 0; i < receivers.length; ++i)
-            receivers[i].fire("notify", data);
+        for (var i = 0; i < receivers.length; ++i) {
+            try {
+                receivers[i].fire("notify", data);
+            } catch (e) {
+                console.log("Failed notification", type, e);
+            }
+        }
     }
 
     function notifyAsync(type, data) {
