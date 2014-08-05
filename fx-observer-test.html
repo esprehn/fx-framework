@@ -1,3 +1,8 @@
+<!--
+    Copyright 2014 The Chromium Authors. All rights reserved.
+    Use of this source code is governed by a BSD-style license that can be
+    found in the LICENSE file.
+ -->
 <link rel="import" href="fx-observer.html">
 
 <script>
@@ -15,17 +20,16 @@ describe("fx-observer", function() {
         container = null;
     });
 
+    function createObserver(type, listener) {
+        var observer = new FxObserver();
+        observer.for = type;
+        if (listener)
+            observer.addEventListener("notify", listener);
+        return observer;
+    }
+
     it("should broadcast events to instances", function() {
         var events = [];
-        var observer1 = createObserver("example");
-        var observer2 = createObserver("example");
-
-        function createObserver(type) {
-            var observer = new FxObserver();
-            observer.for = type;
-            container.appendChild(observer);
-            return observer;
-        }
 
         function listener(event) {
             events.push(event);
@@ -33,14 +37,79 @@ describe("fx-observer", function() {
             assert.ok(event.detail.data, "this is data");
         }
 
-        observer1.addEventListener("notify", listener);
-        observer2.addEventListener("notify", listener);
+        var observer1 = container.appendChild(createObserver("example", listener));
+        var observer2 = container.appendChild(createObserver("example", listener));
 
-        observer1.notify({data: "this is data"});
-
+        observer2.notify({data: "this is data"});
         assert.equal(events.length, 2);
         assert.equal(events[0].target, observer1);
         assert.equal(events[1].target, observer2);
+    });
+
+    it("should only broadcast to and from attached instances", function() {
+        var events = [];
+
+        function listener(event) {
+            events.push(event);
+            assert.ok(event.detail);
+            assert.ok(event.detail.data, "this is data");
+        }
+
+        var observer1 = createObserver("example", listener);
+        var observer2 = container.appendChild(createObserver("example", listener));
+
+        observer1.notify({data: "this should not send"});
+        observer2.notify({data: "this is data"});
+        assert.equal(events.length, 1);
+        assert.equal(events[0].target, observer2);
+
+        events = [];
+        container.appendChild(observer1);
+
+        observer1.notify({data: "this is data"});
+        assert.equal(events.length, 2);
+        assert.equal(events[0].target, observer2);
+        assert.equal(events[1].target, observer1);
+    });
+
+    it("should support async notify", function() {
+        var events = [];
+
+        function listener(event) {
+            events.push(event);
+        }
+
+        var observer = container.appendChild(createObserver("example", listener));
+
+        return observer.notifyAsync({value: 100}).then(function(value) {
+            assert.notOk(value);
+            assert.equal(events.length, 1);
+            assert.ok(events[0].detail);
+            assert.equal(events[0].detail.value, 100);
+        });
+    });
+
+    it("should allow static notification", function() {
+        var events = [];
+
+        function listener(event) {
+            events.push(event);
+        }
+
+        FxObserver.notify("example", {value: 1});
+
+        var observer = container.appendChild(createObserver("example", listener));
+
+        FxObserver.notify("example", {value: 2});
+        FxObserver.notify("example2", {value: 2});
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].detail.value, 2);
+
+        return FxObserver.notifyAsync("example", {value:3}).then(function() {
+            assert.equal(events.length, 2);
+            assert.equal(events[1].detail.value, 3);
+        });
     });
 });
 </script>

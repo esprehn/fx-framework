@@ -1,5 +1,13 @@
 <!--
+    Copyright 2014 The Chromium Authors. All rights reserved.
+    Use of this source code is governed by a BSD-style license that can be
+    found in the LICENSE file.
+ -->
+<!--
     Sends and observes notifications by broadcasting notify events.
+
+    Changing the `for` attribute dynamically is not supported and will cause
+    leaks.
 
     Usage:
 
@@ -47,12 +55,6 @@
             this.active = false;
             this.style.display = "none";
         },
-        forChanged: function(oldValue, newValue) {
-            if (!this.active)
-                return;
-            unregisterInstance(this, oldValue);
-            registerInstance(this, newValue);
-        },
         attached: function() {
             registerInstance(this, this.for);
             this.active = true;
@@ -62,9 +64,13 @@
             this.active = false;
         },
         notify: function(data) {
+            if (!this.active)
+                return;
             notify(this.for, data);
         },
         notifyAsync: function(data) {
+            if (!this.active)
+                return Promise.reject(new Error("Observer is detached"));
             return notifyAsync(this.for, data);
         },
     });
