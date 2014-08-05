@@ -55,6 +55,13 @@ describe("fx-shared-instance", function() {
         assert.equal(events[1].data.value, 100);
     });
 
+    it("should not fail when message type is not a function", function() {
+        var a = container.appendChild(createInstance(""));
+        a.notifyInstances("not a function");
+        a.notifyInstances("__proto__");
+        assert.equal(events.length, 0);
+    });
+
     it("should only notify attached instances", function() {
         var a = container.appendChild(createInstance("", "example"));
         var b = container.appendChild(createInstance("", "example"));
