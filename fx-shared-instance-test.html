@@ -12,37 +12,40 @@
 
 describe("fx-shared-instance", function() {
     var container;
+    var events;
 
     beforeEach(function() {
         container = document.body.appendChild(document.createElement("div"));
+        events = [];
     });
 
     afterEach(function() {
         container.remove();
         container = null;
+        events = null;
     });
 
+    function defaultCallback(data) {
+        events.push({
+            instance: this,
+            data: data
+        });
+    }
+
     function createInstance(type, method, callback) {
-        var observer = new FxSharedInstance();
+        var observer = document.createElement("fx-shared-instance-test");
         if (type)
             observer.instanceType = type;
         if (method && callback)
             observer[method] = callback;
+        else if (method)
+            observer[method] = defaultCallback;
         return observer;
     }
 
     it("should notify all instances", function() {
-        var events = [];
-
-        function callback(data) {
-            events.push({
-                instance: this,
-                data: data
-            });
-        }
-
-        var a = container.appendChild(createInstance("", "example", callback));
-        var b = container.appendChild(createInstance("", "example", callback));
+        var a = container.appendChild(createInstance("", "example"));
+        var b = container.appendChild(createInstance("", "example"));
         a.notifyInstances("example", {value: 100});
 
         assert.equal(events.length, 2);
@@ -50,6 +53,31 @@ describe("fx-shared-instance", function() {
         assert.equal(events[0].data.value, 100);
         assert.equal(events[1].instance, b);
         assert.equal(events[1].data.value, 100);
+    });
+
+    it("should allow getting all instances", function() {
+        var a = container.appendChild(createInstance());
+        var b = container.appendChild(createInstance());
+
+        assert.equal(a.getInstances().length, 2);
+        assert.deepEqual(a.getInstances(), [a, b]);
+        var instances = FxSharedInstance.getInstances("fx-shared-instance-test");
+        assert.equal(instances.length, 2);
+        assert.deepEqual(instances, [a, b]);
+
+        a.remove();
+
+        assert.equal(a.getInstances().length, 1);
+        assert.deepEqual(a.getInstances(), [b]);
+        var instances = FxSharedInstance.getInstances("fx-shared-instance-test");
+        assert.equal(instances.length, 1);
+        assert.deepEqual(instances, [b]);
+
+        b.remove();
+
+        assert.equal(b.getInstances().length, 0);
+        var instances = FxSharedInstance.getInstances("fx-shared-instance-test");
+        assert.equal(instances.length, 0);
     });
 });
 </script>

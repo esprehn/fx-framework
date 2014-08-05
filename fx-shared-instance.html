@@ -62,7 +62,7 @@
 
     Polymer({
         created: function() {
-            this.instanceType = this.tagName;
+            this.instanceType = this.tagName.toLowerCase();
         },
         attached: function() {
             registerInstance(this, this.instanceType);
