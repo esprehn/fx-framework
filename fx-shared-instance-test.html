@@ -79,5 +79,15 @@ describe("fx-shared-instance", function() {
         var instances = FxSharedInstance.getInstances("fx-shared-instance-test");
         assert.equal(instances.length, 0);
     });
+
+    it("should allow setting an explicit instance type", function() {
+        var a = container.appendChild(createInstance("ex-test"));
+
+        assert.equal(a.getInstances().length, 1);
+        assert.deepEqual(a.getInstances(), [a]);
+        var instances = FxSharedInstance.getInstances("ex-test");
+        assert.equal(instances.length, 1);
+        assert.deepEqual(instances, [a]);
+    });
 });
 </script>
