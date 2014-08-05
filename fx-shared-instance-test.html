@@ -55,6 +55,63 @@ describe("fx-shared-instance", function() {
         assert.equal(events[1].data.value, 100);
     });
 
+    it("should only notify attached instances", function() {
+        var a = container.appendChild(createInstance("", "example"));
+        var b = container.appendChild(createInstance("", "example"));
+
+        a.remove();
+        a.notifyInstances("example");
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].instance, b);
+
+        events = [];
+        b.remove();
+        b.notifyInstances("example");
+        assert.equal(events.length, 0);
+
+        container.appendChild(b);
+        container.appendChild(a);
+
+        events = [];
+        b.notifyInstances("example");
+        assert.equal(events.length, 2);
+        assert.equal(events[0].instance, b);
+        assert.equal(events[1].instance, a);
+    });
+
+    it("should notify all instances async", function() {
+        var a = container.appendChild(createInstance("", "example"));
+        var b = container.appendChild(createInstance("", "example"));
+        return a.notifyInstancesAsync("example", {value: 100}).then(function(value) {
+            assert.equal(value, undefined);
+            assert.equal(events.length, 2);
+            assert.equal(events[0].instance, a);
+            assert.equal(events[0].data.value, 100);
+            assert.equal(events[1].instance, b);
+            assert.equal(events[1].data.value, 100);
+        });
+    });
+
+    it("should allow static notification", function() {
+        FxSharedInstance.notify("fx-shared-instance-test", {value: 1});
+
+        var a = container.appendChild(createInstance("", "example"));
+
+        FxSharedInstance.notify("fx-shared-instance-test", "example", {value: 2});
+        FxSharedInstance.notify("not-an-element", "example", {value: 2});
+
+        assert.equal(events.length, 1);
+        assert.equal(events[0].instance, a);
+        assert.equal(events[0].data.value, 2);
+
+        return FxSharedInstance.notifyAsync("fx-shared-instance-test", "example", {value:3}).then(function() {
+            assert.equal(events.length, 2);
+            assert.equal(events[1].instance, a);
+            assert.equal(events[1].data.value, 3);
+        });
+    });
+
     it("should allow getting all instances", function() {
         var a = container.appendChild(createInstance());
         var b = container.appendChild(createInstance());
