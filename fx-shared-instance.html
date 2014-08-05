@@ -51,13 +51,17 @@
 
     function notify(type, method, data) {
         var receivers = getInstances(type);
-        for (var i = 0; i < receivers.length; ++i) {
-            try {
-                if (typeof receivers[i][method] == "function")
-                    receivers[i][method](data);
-            } catch (e) {
-                console.log("Failed notification", type, method, e);
-            }
+        for (var i = 0; i < receivers.length; ++i)
+            notifyInternal(receivers[i], type, method, data);
+    }
+
+    // FIXME: Hack for v8 since it can't optimize functions with try/catch.
+    function notifyInternal(receiver, type, method, data) {
+        try {
+            if (typeof receiver[method] == "function")
+                receiver[method](data);
+        } catch (e) {
+            console.log("Failed notification", type, method, e);
         }
     }
 

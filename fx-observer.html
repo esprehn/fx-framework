@@ -40,12 +40,16 @@
 
     function notify(type, data) {
         var receivers = instances[type] || [];
-        for (var i = 0; i < receivers.length; ++i) {
-            try {
-                receivers[i].fire("notify", data);
-            } catch (e) {
-                console.log("Failed notification", type, e);
-            }
+        for (var i = 0; i < receivers.length; ++i)
+            notifyInternal(receivers[i], type, data);
+    }
+
+    // FIXME: Hack for v8 since it can't optimize functions with try/catch.
+    function notifyInternal(receiver, type, data) {
+        try {
+            receiver.fire("notify", data);
+        } catch (e) {
+            console.log("Failed notification", type, e);
         }
     }
 
