@@ -44,8 +44,12 @@
         instances[type].remove(object);
     }
 
+    function getInstances(type) {
+        return instances[type] || [];
+    }
+
     function notify(type, method, data) {
-        var receivers = instances[type] || [];
+        var receivers = getInstances(type);
         for (var i = 0; i < receivers.length; ++i)
             receivers[i][method](data);
     }
@@ -73,7 +77,7 @@
             return notifyAsync(this.instanceType, method, data);
         },
         getInstances: function() {
-            return instances[this.instanceType] || [];
+            return getInstances(this.instanceType);
         },
     });
 
@@ -81,6 +85,7 @@
         // Static API
         FxSharedInstance.notify = notify;
         FxSharedInstance.notifyAsync = notifyAsync;
+        FxSharedInstance.getInstances = getInstances;
     });
 })();
 </script>

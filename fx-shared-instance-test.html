@@ -1,0 +1,55 @@
+<!--
+    Copyright 2014 The Chromium Authors. All rights reserved.
+    Use of this source code is governed by a BSD-style license that can be
+    found in the LICENSE file.
+ -->
+<link rel="import" href="fx-shared-instance.html">
+
+<polymer-element name="fx-shared-instance-test" extends="fx-shared-instance" noscript></polymer>
+
+<script>
+"use strict";
+
+describe("fx-shared-instance", function() {
+    var container;
+
+    beforeEach(function() {
+        container = document.body.appendChild(document.createElement("div"));
+    });
+
+    afterEach(function() {
+        container.remove();
+        container = null;
+    });
+
+    function createInstance(type, method, callback) {
+        var observer = new FxSharedInstance();
+        if (type)
+            observer.instanceType = type;
+        if (method && callback)
+            observer[method] = callback;
+        return observer;
+    }
+
+    it("should notify all instances", function() {
+        var events = [];
+
+        function callback(data) {
+            events.push({
+                instance: this,
+                data: data
+            });
+        }
+
+        var a = container.appendChild(createInstance("", "example", callback));
+        var b = container.appendChild(createInstance("", "example", callback));
+        a.notifyInstances("example", {value: 100});
+
+        assert.equal(events.length, 2);
+        assert.equal(events[0].instance, a);
+        assert.equal(events[0].data.value, 100);
+        assert.equal(events[1].instance, b);
+        assert.equal(events[1].data.value, 100);
+    });
+});
+</script>
