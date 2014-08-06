@@ -75,5 +75,29 @@ describe("fx-listener", function() {
         assert.equal(events[0].listener, b);
         assert.equal(events[1].listener, a);
     });
+
+    it("should not mix listeners", function() {
+        var events = [];
+        function handleEvent(event) {
+            events.push({
+                listener: this,
+                event: event,
+            });
+        }
+        var a = new FxListener();
+        var b = new FxListener();
+        a.addEventListener("example1", handleEvent);
+        b.addEventListener("example2", handleEvent);
+        a.setAttribute("on-example1", "");
+        b.setAttribute("on-example2", "");
+        container.appendChild(a);
+        container.appendChild(b);
+        window.dispatchEvent(new CustomEvent("example2"));
+        assert.equal(events.length, 1);
+        assert.equal(events[0].listener, b);
+        window.dispatchEvent(new CustomEvent("example1"));
+        assert.equal(events.length, 2);
+        assert.equal(events[1].listener, a);
+    });
 });
 </script>
