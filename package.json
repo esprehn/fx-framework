@@ -13,6 +13,6 @@
     "karma": "^0.12.17",
     "karma-chrome-launcher": "^0.1.4",
     "karma-mocha": "^0.1.3",
-    "mocha": ">=1.9",
+    "mocha": ">=1.9"
   }
 }
