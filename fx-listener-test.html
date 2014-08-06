@@ -1,0 +1,27 @@
+<!--
+    Copyright 2014 The Chromium Authors. All rights reserved.
+    Use of this source code is governed by a BSD-style license that can be
+    found in the LICENSE file.
+ -->
+<link rel="import" href="fx-listener.html">
+
+<script>
+"use strict";
+
+describe("fx-listener", function() {
+    var container;
+
+    beforeEach(function() {
+        container = document.body.appendChild(document.createElement("div"));
+    });
+
+    afterEach(function() {
+        container.remove();
+        container = null;
+    });
+
+    it("should create an instance", function() {
+        var listener = new FxListener();
+    });
+});
+</script>

@@ -16,5 +16,122 @@
 -->
 <link href="../polymer/polymer.html" rel="import">
 
-<polymer-element name="fx-listener" constructor="FxListener">
+<link href="fx-shared-instance.html" rel="import">
+
+<polymer-element name="fx-listener" constructor="FxListener" attributes="target">
+<script>
+(function() {
+    var listeners = {};
+
+    function addEventListener(target, eventName, listener) {
+        if (!target || !target.addEventListener || !eventName)
+            return;
+        var data = findListenerData(target, eventName);
+        if (!data) {
+            data = {
+                target: target,
+                listeners: [],
+                handler: function(event) {
+                    dispatchEvents(event, data.listeners);
+                },
+            };
+            listeners[eventName] = listeners[eventName] || [];
+            listeners[eventName].push(data);
+            target.addEventListener(eventName, data.handler);
+        }
+        if (!data.listeners.find(listener))
+            data.listeners.add(listener);
+    }
+
+    function removeEventListener(target, eventName, listener) {
+        if (!target || !target.addEventListener || !eventName)
+            return;
+        var data = findListenerData(target, eventName);
+        if (!data)
+            return;
+        data.listeners.remove(listener);
+        if (!data.listeners.length) {
+            listeners[eventName].remove(data);
+            target.removeEventListener(eventName, data.handler);
+        }
+    }
+
+    function dispatchEvents(event, listeners) {
+        listeners.forEach(function(listener) {
+            listener.fire(event.type, {
+                originalEvent: event
+            }, /*onNode*/ null, /*bubbles*/ false, /*cancelable*/ false);
+        });
+    }
+
+    function findListenerData(target, eventName) {
+        var entries = listener[eventName] || [];
+        for (var i = 0; i < entries.length; ++i) {
+            if (entries[i].target == target)
+                return entries[i];
+        }
+        return null;
+    }
+
+    function findTarget(path) {
+        var object = window;
+        var parts = path.split(".");
+        for (var i = 0; i < parts.length && object; ++i)
+            object = object[parts[i]];
+        return object;
+    }
+
+    function addEventListeners(listener, path) {
+        if (!listener.active)
+            return;
+        var target = findTarget(path);
+        Object.keys(listener.events, function(eventName) {
+            addListener(target, eventName, listener);
+        });
+    }
+
+    function removeEventListeners(listener, path) {
+        if (!listener.active)
+            return;
+        var target = findTarget(path);
+        Object.keys(listener.events, function(eventName) {
+            removeListener(target, eventName, listener);
+        });
+    }
+
+    Polymer({
+        events: null,
+        target: "",
+        active: false,
+        created: function() {
+            this.events = {};
+        },
+        attached: function() {
+            this.active = true;
+            addEventListeners(this, this.target);
+        },
+        detached: function() {
+            removeEventListeners(this, this.target);
+            this.active = false;
+        },
+        targetChanged: function(oldValue, newValue) {
+            if (oldValue != null)
+                removeEventListeners(this, oldValue);
+            addEventListeners(this, newValue);
+        },
+        attributeChanged: function(name, oldValue, newValue) {
+            var dash = name.charAt(2);
+            if (dash != "-" || attr.name.to(2) != "on")
+                return;
+            removeEventListeners(this, this.target);
+            var eventName = name.from(3);
+            if (newValue == null)
+                delete this.events[eventName];
+            else
+                this.events[eventName] = {};
+            addEventListeners(this, this.target);
+        },
+    });
+})();
+</script>
 </polymer-element>
