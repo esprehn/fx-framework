@@ -58,6 +58,8 @@
 
     function dispatchEvents(event, listeners) {
         listeners.forEach(function(listener) {
+            if (!listener.active)
+                return;
             listener.fire(event.type, {
                 originalEvent: event
             }, /*onNode*/ null, /*bubbles*/ false, /*cancelable*/ false);
@@ -81,55 +83,36 @@
         return object;
     }
 
-    function addEventListeners(listener, path) {
-        if (!listener.active)
-            return;
-        var target = findTarget(path);
-        Object.keys(listener.events, function(eventName) {
-            addListener(target, eventName, listener);
-        });
-    }
-
-    function removeEventListeners(listener, path) {
-        if (!listener.active)
-            return;
-        var target = findTarget(path);
-        Object.keys(listener.events, function(eventName) {
-            removeListener(target, eventName, listener);
-        });
+    function findEventNames(element) {
+        var eventsNames = [];
+        for (var i = 0; i < this.attributes.length; ++i) {
+            var name = this.attributes[i].name;
+            var dash = name.charAt(2);
+            if (dash != "-" || name.to(2) != "on")
+                return;
+            var eventName = name.from(3);
+            if (!eventName)
+            eventsNames.push(eventName);
+        }
+        return eventsNames;
     }
 
     Polymer({
-        events: null,
         target: "",
+        events: null,
         active: false,
-        created: function() {
-            this.events = {};
-        },
         attached: function() {
             this.active = true;
-            addEventListeners(this, this.target);
+            this.events = findEventNames(this);
+            var target = findTarget(this.target);
+            for (var i = 0; i < this.events.length; ++i)
+                addEventListener(target, this.events[i], this);
         },
         detached: function() {
-            removeEventListeners(this, this.target);
+            var target = findTarget(this.target);
+            for (var i = 0; i < this.events.length; ++i)
+                removeListener(target, this.events[i], this);
             this.active = false;
-        },
-        targetChanged: function(oldValue, newValue) {
-            if (oldValue != null)
-                removeEventListeners(this, oldValue);
-            addEventListeners(this, newValue);
-        },
-        attributeChanged: function(name, oldValue, newValue) {
-            var dash = name.charAt(2);
-            if (dash != "-" || attr.name.to(2) != "on")
-                return;
-            removeEventListeners(this, this.target);
-            var eventName = name.from(3);
-            if (newValue == null)
-                delete this.events[eventName];
-            else
-                this.events[eventName] = {};
-            addEventListeners(this, this.target);
         },
     });
 })();
