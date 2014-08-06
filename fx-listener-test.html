@@ -16,12 +16,26 @@ describe("fx-listener", function() {
     });
 
     afterEach(function() {
-        container.remove();
+        if (container)
+            container.remove();
         container = null;
     });
 
-    it("should create an instance", function() {
+    it.only("should listen for events on the window", function() {
+        var events = [];
         var listener = new FxListener();
+        listener.setAttribute("on-test-event", "ignored");
+        listener.addEventListener("test-event", function(event) {
+            events.push(event);
+        });
+        window.dispatchEvent(new CustomEvent("test-event"));
+        container.appendChild(listener);
+        var event = new CustomEvent("test-event");
+        window.dispatchEvent(event);
+        listener.remove();
+        window.dispatchEvent(new CustomEvent("test-event"));
+        assert.equal(events.length, 1);
+        assert.equal(events[0].detail, event);
     });
 });
 </script>

@@ -60,14 +60,13 @@
         listeners.forEach(function(listener) {
             if (!listener.active)
                 return;
-            listener.fire(event.type, {
-                originalEvent: event
-            }, /*onNode*/ null, /*bubbles*/ false, /*cancelable*/ false);
+            listener.fire(event.type, event, /*onNode*/ null, /*bubbles*/ false,
+                /*cancelable*/ false);
         });
     }
 
     function findListenerData(target, eventName) {
-        var entries = listener[eventName] || [];
+        var entries = listeners[eventName] || [];
         for (var i = 0; i < entries.length; ++i) {
             if (entries[i].target == target)
                 return entries[i];
@@ -78,21 +77,22 @@
     function findTarget(path) {
         var object = window;
         var parts = path.split(".");
-        for (var i = 0; i < parts.length && object; ++i)
-            object = object[parts[i]];
+        for (var i = 0; i < parts.length && object; ++i) {
+            if (parts[i])
+                object = object[parts[i]];
+        }
         return object;
     }
 
     function findEventNames(element) {
         var eventsNames = [];
-        for (var i = 0; i < this.attributes.length; ++i) {
-            var name = this.attributes[i].name;
-            var dash = name.charAt(2);
-            if (dash != "-" || name.to(2) != "on")
+        for (var i = 0; i < element.attributes.length; ++i) {
+            var name = element.attributes[i].name;
+            if (name.to(3) != "on-")
                 return;
             var eventName = name.from(3);
-            if (!eventName)
-            eventsNames.push(eventName);
+            if (eventName)
+                eventsNames.push(eventName);
         }
         return eventsNames;
     }
@@ -104,14 +104,18 @@
         attached: function() {
             this.active = true;
             this.events = findEventNames(this);
+            if (!this.events.length)
+                return;
             var target = findTarget(this.target);
             for (var i = 0; i < this.events.length; ++i)
                 addEventListener(target, this.events[i], this);
         },
         detached: function() {
+            if (!this.events || !this.events.length)
+                return;
             var target = findTarget(this.target);
             for (var i = 0; i < this.events.length; ++i)
-                removeListener(target, this.events[i], this);
+                removeEventListener(target, this.events[i], this);
             this.active = false;
         },
     });
