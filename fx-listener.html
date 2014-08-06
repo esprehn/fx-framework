@@ -10,9 +10,15 @@
     creating an element programatically you can add an attribute
     "on-{eventname}" to the element with no value.
 
+    Dynamically changing the target or event attributes after inserting into the
+    document is not supported.
+
     Usage:
 
     <fx-listener on-hashchange="{{ handleHashChange }}"></fx-listener>
+    <fx-listener
+        target="screen.orientation"
+        on-orientationchange="{{ handleHashChange }}"></fx-listener>
 -->
 <link href="../polymer/polymer.html" rel="import">
 
