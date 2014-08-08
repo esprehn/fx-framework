@@ -105,6 +105,9 @@
         target: "",
         events: null,
         active: false,
+        created: function() {
+            this.style.display = "none";
+        },
         attached: function() {
             this.active = true;
             this.events = findEventNames(this);
