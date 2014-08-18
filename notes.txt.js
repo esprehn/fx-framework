@@ -12,10 +12,9 @@
         // ...
     });
 */
-@Element("fx-observer");
+@Element("fx-observer")
+@Event("notify")
 class FxObserver extends HTMLElement {
-    @Event("notify");
-
     string for;
 
     void notify(optional Object data);
@@ -53,7 +52,7 @@ class FxObserver extends HTMLElement {
         </script>
     </polymer-element>
 */
-@Element("fx-shared-instance");
+@Element("fx-shared-instance")
 class FxSharedInstance extends HTMLElement {
     string instanceType;
 
@@ -83,7 +82,7 @@ class FxSharedInstance extends HTMLElement {
 
     <fx-listener on-hashchange="{{ handleHashChange }}"></fx-listener>
 */
-@Element("fx-listener");
+@Element("fx-listener")
 class FxListener extends FxSharedInstance {
     string target;
 }
@@ -96,7 +95,7 @@ class FxListener extends FxSharedInstance {
 
     <fx-route path="/issue/{id:\d+}" element="cr-issue-view"></fx-route>
 */
-@Element("fx-route");
+@Element("fx-route")
 class FxRoute extends HTMLElement {
     string path;
     string element;
@@ -118,7 +117,7 @@ class FxRoute extends HTMLElement {
         <fx-route path="/issue/{id:\d+}" element="cr-issue-view"></fx-route>
     </fx-view>
 */
-@Element("fx-view");
+@Element("fx-view")
 class FxView extends HTMLElement {
     Element activeView;
     Promise<Element> createView();
@@ -130,7 +129,7 @@ class FxView extends HTMLElement {
     (inside the same ShadowRoot) where clicks on those links should instead
     navigate to views instead of reloading the page.
 */
-@Element("fx-view-aware");
+@Element("fx-view-aware")
 class FxViewAware extends HTMLElement { }
 
 /*
@@ -153,7 +152,7 @@ class FxViewAware extends HTMLElement { }
     }
     this.$.taskQueue.scheduleWork(nextElement);
 */
-@Element("fx-task-queue");
+@Element("fx-task-queue")
 class FxTaskQueue extends HTMLElement {
     number workLimit = 100; // ms
     number priority = 100;
@@ -196,11 +195,10 @@ class FxTaskQueue extends HTMLElement {
         // ... done.
     });
 */
-@Element("fx-worker");
+@Element("fx-worker")
+@Event("message")
+@Event("error")
 class FxWorker extends HTMLElement {
-    @Event("message");
-    @Event("error");
-
     Worker worker;
 
     dictionary SendOptions {
