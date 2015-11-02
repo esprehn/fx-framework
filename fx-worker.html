@@ -10,9 +10,6 @@ class FxWorker extends HTMLScriptElement {
 
   createdCallback() {
     this.worker_ = null;
-    this.worker = new Promise(() => {
-      return this.worker_;
-    });
   }
 
   attachedCallback() {

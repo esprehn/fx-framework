@@ -5,203 +5,347 @@
 (function() {
 "use strict";
 
-const ForbiddenProperties = {
-  "Document": [
-    "write",
-    "writeln",
-    "open",
-    "close",
-  ],
-};
+// These are also states.
+const FORBIDDEN = 0;
+const READ = 1;
+const WRITE = 2;
 
-const LayoutProperties = {
+// These are special types of handler that map to states.
+const ACCESSOR = 3;
+const VALUE = 4;
+
+const PrototypeProperties = {
   "Document": [
-    "execCommand",
-    "elementFromPoint",
-    "elementsFromPoint",
-    "scrollingElement",
+    ["execCommand", WRITE],
+    ["elementFromPoint", READ],
+    ["elementsFromPoint", READ],
+    ["scrollingElement", ACCESSOR],
+    ["write", FORBIDDEN],
+    ["writeln", FORBIDDEN],
+    ["open", FORBIDDEN],
+    ["close", FORBIDDEN],
+  ],
+  "Node": [
+    ["appendChild", WRITE],
+    ["removeChild", WRITE],
+    ["insertBefore", WRITE],
+    ["textContent", WRITE],
   ],
   "Element": [
-    "scrollIntoView",
-    "scrollBy",
-    "scrollTo",
-    "getClientRects",
-    "getBoundingClientRect",
-    "computedRole",
-    "computedName",
-    "focus",
-    "offsetLeft",
-    "offsetTop",
-    "offsetWidth",
-    "offsetHeight",
-    "offsetParent",
-    "clientLeft",
-    "clientWidth",
-    "clientHeight",
-    "scrollLeft",
-    "scrollTop",
-    "scrollWidth",
-    "scrollHeight",
-    "innerText",
-    "outerText",
-    "scrollLeft",
-    "scrollTop",
+    ["scrollIntoView", WRITE],
+    ["scrollBy", WRITE],
+    ["scrollTo", WRITE],
+    ["getClientRects", READ],
+    ["getBoundingClientRect", READ],
+    ["computedRole", ACCESSOR],
+    ["computedName", ACCESSOR],
+    ["clientLeft", ACCESSOR],
+    ["clientWidth", ACCESSOR],
+    ["clientHeight", ACCESSOR],
+    ["scrollLeft", ACCESSOR],
+    ["scrollTop", ACCESSOR],
+    ["scrollWidth", ACCESSOR],
+    ["scrollHeight", ACCESSOR],
+    ["scrollLeft", ACCESSOR],
+    ["scrollTop", ACCESSOR],
+    ["innerHTML", WRITE],
+    ["outerHTML", WRITE],
+    ["insertAdjacentHTML", WRITE],
+    ["remove", WRITE],
+  ],
+  "HTMLElement": [
+    ["offsetLeft", ACCESSOR],
+    ["offsetTop", ACCESSOR],
+    ["offsetWidth", ACCESSOR],
+    ["offsetHeight", ACCESSOR],
+    ["offsetParent", ACCESSOR],
+    ["innerText", ACCESSOR],
+    ["outerText", ACCESSOR],
+    ["focus", ACCESSOR],
+  ],
+  "CharacterData": [
+    ["remove", WRITE],
+    ["data", WRITE],
   ],
   "Range": [
-    "getClientRects",
-    "getBoundingClientRect",
+    ["getClientRects", READ],
+    ["getBoundingClientRect", READ],
   ],
   "MouseEvent": [
-    "layerX",
-    "layerY",
-    "offsetX",
-    "offsetY",
+    ["layerX", ACCESSOR],
+    ["layerY", ACCESSOR],
+    ["offsetX", ACCESSOR],
+    ["offsetY", ACCESSOR],
   ],
   "HTMLButtonElement": [
-    "reportValidity",
+    ["reportValidity", READ],
   ],
   "HTMLDialogElement": [
-    "showModal",
+    ["showModal", WRITE],
   ],
   "HTMLFieldSetElement": [
-    "reportValidity",
+    ["reportValidity", READ]
   ],
   "HTMLImageElement": [
-    "width",
-    "height",
-    "x",
-    "y",
+    ["width", ACCESSOR],
+    ["height", ACCESSOR],
+    ["x", ACCESSOR],
+    ["y", ACCESSOR],
   ],
   "HTMLInputElement": [
-    "reportValidity",
+    ["reportValidity", READ],
   ],
   "HTMLButtonElement": [
-    "reportValidity",
+    ["reportValidity", READ]
   ],
   "HTMLKeygenElement": [
-    "reportValidity",
+    ["reportValidity", READ]
   ],
+  // TODO(esprehn): This doesn't really work, you can just do style.width to
+  // force a layout, we need to overwrite getComputedStyle, but since you can
+  // also save the return value we need to also probably make it reutrn a
+  // wrapper.
   "CSSStyleDeclaration": [
-    "getPropertyValue",    
+    ["getPropertyValue", READ],
   ],
   "SVGSVGElement": [
-    "currentScale",
+    ["currentScale", ACCESSOR],
   ],
 };
 
-const LayoutWindowProperties = [
-  "innerHeight",
-  "innerWidth",
-  "scrollX",
-  "scrollY",
-  "scrollBy",
-  "scrollTo",
+const InstanceProperties = {
+  "window": [
+    ["innerHeight", VALUE],
+    ["innerWidth", VALUE],
+    ["scrollX", VALUE],
+    ["scrollY", VALUE],
+    ["scrollBy", WRITE],
+    ["scrollTo", WRITE],
+    ["scroll", WRITE],
+    ["alert", FORBIDDEN],
+    ["prompt", FORBIDDEN],
+    ["confirm", FORBIDDEN],
+    ["find", FORBIDDEN],
+    ["getMatchedCSSRules", FORBIDDEN],
+  ],
+};
+
+var currentState = FORBIDDEN;
+
+function handleForbidden(descriptor, propertyName) {
+  function forbidden() {
+    throw new Error(`${propertyName} is forbidden.`);
+  }
+  if ("value" in descriptor) {
+    if (typeof descriptor.value == "function") {
+      descriptor.value = forbidden;
+    } else {
+      descriptor.value = "forbidden";
+    }
+  } else {
+    if (descriptor.get) {
+      descriptor.get = forbidden;
+    }
+    if (descriptor.set) {
+      descriptor.set = forbidden;
+    }
+  }
+  return descriptor;
+}
+
+function handleRead(descriptor, propertyName) {
+  var value = descriptor.value;
+  if (typeof value == "function") {
+    descriptor.value = function() {
+      if (currentState != READ)
+        throw new Error(`Can only call ${propertyName} inside FxDom.read.`);
+      return value.apply(this, arguments);
+    };
+  } else if (descriptor.get) {
+    var get = descriptor.get;
+    descriptor.get = function() {
+      if (currentState != READ)
+        throw new Error(`Can only get ${propertyName} inside FxDom.read.`);
+      return get.apply(this, arguments);
+    };
+  }
+  return descriptor;
+}
+
+function handleWrite(descriptor, propertyName) {
+  var value = descriptor.value;
+  if (typeof value == "function") {
+    descriptor.value = function() {
+      if (currentState != WRITE)
+        throw new Error(`Can only call ${propertyName} inside FxDom.write.`);
+      return value.apply(this, arguments);
+    };
+  } else if (descriptor.set) {
+    var set = descriptor.set;
+    descriptor.set = function() {
+      if (currentState != WRITE)
+        throw new Error(`Can only set ${propertyName} inside FxDom.write.`);
+      return set.apply(this, arguments);
+    };
+  }
+  return descriptor;
+}
+
+function handleAccessor(descriptor, propertyName) {
+    descriptor = handleRead(descriptor, propertyName);
+    return handleWrite(descriptor, propertyName);
+}
+
+function handleValue(descriptor, propertyName) {
+  // Some properties are actually on the instance of objects and we need
+  // to replace them with accessors which magically delete themselves on
+  // access, call into the v8 interceptor, and then add themselves back.
+  // This won't be fast, but these are rarely accessed so it should be fine.
+  descriptor.get = function() {
+    if (currentState != READ)
+      throw new Error(`Can only get ${propertyName} inside FxDom.read.`);
+    delete this[propertyName];
+    var result = this[propertyName];
+    Object.defineProperty(this, propertyName, descriptor);
+    return result;
+  };
+  return descriptor;
+}
+
+// This follows the enum order.
+const HandlerMap = [
+  handleForbidden,
+  handleRead,
+  handleWrite,
+  handleAccessor,
+  handleValue,
 ];
 
-const ForbiddenWindowProperties = [
-  "alert",
-  "prompt",
-  "confirm",
-  "find",
-  "getMatchedCSSRules",
-];
-
-function processPrototypes(map, options) {
-  var handleAccessor = options.handleAccessor;
-  var handleValue = options.handleValue;
-  for (var typeName in ForbiddenProperties) {
-    var typeConstructor = window[typeName];
-    if (!typeConstructor)
+function processMap(map, lookupCallback) {
+  for (var typeName in map) {
+    var object = lookupCallback(typeName);
+    if (!object) {
+      // For debugging, but logs about experimental features so don't do it
+      // in production.
+      // console.log(`${typeName} not found.`);
       continue;
-    var prototype = typeConstructor.prototype;
-    if (!prototype)
-      continue;
-    var properties = ForbiddenProperties[typeName];
+    }
+    var properties = map[typeName];
     for (var i = 0; i < properties.length; ++i) {
-      var propertyName = properties[i];
-      var descriptor = Object.getOwnPropertyDescriptor(prototype, propertyName);
-      var newDescriptor;
-      if (descriptor.get || descriptor.set)
-        newDescriptor = handleAccessor(prototype, propertyName, descriptor);
-      else if (descriptor.value) {
-        newDescriptor = handleValue(prototype, propertyName, descriptor);
+      var propertyName = properties[i][0];
+      var handlerType = properties[i][1];
+      var descriptor;
+      // Don't try to get value types, it causes a read which forces a layout.
+      if (handlerType != VALUE) 
+        descriptor = Object.getOwnPropertyDescriptor(object, propertyName);
+      else if (object.hasOwnProperty(propertyName))
+        descriptor = {};
+      if (!descriptor) {
+        // For debugging, but logs about experimental features so don't do it
+        // in production.
+        // console.log(`${typeName}.${propertyName} not found.`);
+        continue;
       }
-      if (newDescriptor)
-        Object.defineProperty(prototype, propertyName, descriptor);
+      var newDescriptor = HandlerMap[handlerType](descriptor, propertyName);
+      if (newDescriptor) {
+        // delete object[propertyName];
+        Object.defineProperty(object, propertyName, newDescriptor);
+      }
     }
   }
 }
 
-const READ_MODE = 0;
-const WRITE_MODE = 1;
-
-var currentMode = READ_MODE;
-
-function forbidden(propertyName) {
-  throw new Error(`${propertyName} is forbidden.`);
-}
-
-function readOnly(propertyName) {
-  if (currentMode != READ_MODE)
-    throw new Error(`${propertyName} is not allowed in write mode.`);
-}
-
-function writeOnly(propertyName) {
-  if (currentMode != WRITE_MODE)
-    throw new Error(`${propertyName} is not allowed in read mode.`);
-}
-
-processPrototypes(LayoutProperties, {
-  handleAccessor: function(prototype, descriptor, propertyName) {
-      var get = descriptor.get;
-      var set = descriptor.set;
-      if (get) {
-        descriptor.get = function() {
-          readOnly(propertyName);
-          return get.apply(this, arguments);
-        };
-      }
-      if (set) {
-        descriptor.set = function() {
-          writeOnly(propertyName);
-          return set.apply(this, arguments);
-        };
-      }
-      return descriptor;
-  },
-  handleValue: function(prototype, descriptor, propertyName) {
-    var value = descriptor.value;
-    if (typeof value != "function")
-      return;
-    descriptor.value = function() {
-      readOnly(propertyName);
-      return value.apply(this, arguments);
-    };
-    return descriptor;
-  },
+processMap(PrototypeProperties, function(name) {
+  var object = window[name];
+  if (object)
+    return object.prototype;
+  return null;
 });
 
-processPrototypes(ForbiddenProperties, {
-  handleAccessor: function(prototype, descriptor, propertyName) {
-    var get = descriptor.get;
-    var set = descriptor.set;
-    function forbidProperty() {
-      forbidden(propertyName);
-    };
-    descriptor.get = forbidProperty;
-    descriptor.set = forbidProperty;
-    return descriptor;
-  },
-  handleValue: function(prototype, descriptor, propertyName) {
-    var value = descriptor.value;
-    if (typeof value != "function")
-      return;
-    descriptor.value = function() {
-      forbidden(propertyName);
-    };
-    return descriptor;
-  },
+processMap(InstanceProperties, function(name) {
+  return window[name];
 });
+
+var readQueue = [];
+var writeQueue = [];
+var didScheduleQueues = false;
+var insideRaf = false;
+
+function scheduleProcessQueues() {
+  if (didScheduleQueues)
+    return;
+  if (insideRaf)
+    Promise.resolve().then(processQueues);
+  else
+    requestAnimationFrame(processQueues);
+  didScheduleQueues = true;
+}
+
+var originalRequestAnimationFrame = window.requestAnimationFrame;
+function fxRequestAnimationFrame(callback) {
+  originalRequestAnimationFrame(function() {
+    insideRaf = true;
+    try {
+      callback.apply(null, arguments);
+    } finally {
+      insideRaf = false;
+    }
+  });
+}
+window.requestAnimationFrame = fxRequestAnimationFrame;
+
+function callIgnoringError(callback) {
+  try {
+    callback();
+  } catch (e) {
+    // rethrow in a clean callstack.
+    setTimeout(function() {
+      throw e;
+    });
+  }
+}
+
+function processQueue(queue) {
+  for (var i = 0; i < queue.length; ++i)
+    callIgnoringError(queue[i]);
+}
+
+function processQueues() {
+  if (currentState != FORBIDDEN)
+    throw new Error(`Invalid lifecycle state ${currentState}`);
+  while (readQueue.length || writeQueue.length) {
+    if (readQueue.length) {
+      var currentReadQueue = readQueue;
+      readQueue = [];
+      currentState = READ;
+      processQueue(currentReadQueue);
+    }
+    if (writeQueue.length) {
+      var currentWriteQueue = writeQueue;
+      writeQueue = [];
+      currentState = WRITE;
+      processQueue(currentWriteQueue);
+    }
+  }
+  currentState = FORBIDDEN;
+  didScheduleQueues = false;
+}
+
+class FxDom {
+  static get currentState() { return currentState; }
+
+  static read(callback) {
+    readQueue.push(callback);
+    scheduleProcessQueues();
+  }
+
+  static write(callback) {
+    writeQueue.push(callback);
+    scheduleProcessQueues();
+  }
+}
+
+window.FxDom = FxDom;
 
 })();
 </script>

@@ -6,3 +6,27 @@
 <script is="fx-worker" type="worker">
     console.log(this);
 </script>
+
+<div id="first"></div>
+<div id="second"></div>
+
+<script>
+var first = document.getElementById("first");
+var second = document.getElementById("second");
+FxDom.write(() => {
+    first.innerHTML = "Hello World";
+    // nested raf.
+    requestAnimationFrame(() => {
+        first.textContent = "Nope";
+    });
+    requestAnimationFrame(() => {
+        var height;
+        FxDom.read(() => {
+            height = document.body.clientHeight;
+        });
+        FxDom.write(() => {
+            second.textContent = `Body height is ${height}`;
+        });
+    });
+});
+</script>
