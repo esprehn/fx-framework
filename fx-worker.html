@@ -1,34 +1,35 @@
 <!--
-    Declares a web worker to execute async work. Supports the following worker
-    message protocol:
-
-    {
-        type: string,
-        data: any,
-    }
-
-    The worker will be killed when the element is detached unless disconnect()
-    is called.
-
-    Note that all messages sent with send() expect a reply by default and will
-    reject without a "timeout" error after the specified timeout unless you
-    specify noreply = true.
-
-    Usage:
-
-    <fx-worker id="worker">
-        <script type="worker">
-            onmessage = function(event) {
-                
-            };
-        </script>
-    </fx-worker>
-
-    this.$.worker.send("doWork", [stuff]).then(function() {
-        // ... done.
-    });
+    Declares a web worker to execute async work.
 -->
-<link href="../polymer/polymer.html" rel="import">
+<script>
+(function() {
+"use strict";
 
-<polymer-element name="fx-worker" constructor="FxWorker">
-</polymer-element>
+class FxWorker extends HTMLScriptElement {
+    static get extends() { return "script" }
+    createdCallback() {
+        this.worker_ = null;
+        this.worker = new Promise(() => {
+            return this.worker_;
+        });
+    }
+    attachedCallback() {
+        if (!this.worker_)
+            this.startWorker();
+    }
+    detachedCallback() {
+        if (this.worker_)
+            this.worker_.terminate();
+    }
+    startWorker() {
+        if (this.worker_)
+            return;
+        var url = URL.createObjectURL(new Blob([this.textContent]));
+        this.worker_ = new Worker(url);
+    }
+}
+
+document.registerElement("fx-worker", FxWorker);
+
+})();
+</script>
