@@ -1,0 +1,145 @@
+<!--
+  Provides proper batched lifecycle for DOM mutation in apps.
+-->
+<script>
+(function() {
+"use strict";
+
+function disallow() {
+  throw new Error("This method is not allowed in an FX app.");
+}
+
+function redefineGetter(proto, key, getterSynthesizer) {
+  var descriptor = Object.getOwnPropertyDescriptor(proto, key);
+  if (!descriptor || !descriptor.get)
+    throw new Error(`Unable to redefine getter ${key} on prototype ${proto}.`);
+
+  descriptor.get = getterSynthesizer(descriptor.get);
+
+  Object.defineProperty(proto, key, descriptor);
+}
+
+function define(proto, key, value) {
+  Object.defineProperty(proto, key, {
+    value: value,
+    writable: true,
+    configurable: true,
+    enumerable: true
+  });
+}
+
+const LayoutMethods = {
+  "HTMLDocument": {
+    "getter": [
+      "scrollingElement",
+    ],
+    "method": [
+      "execCommand",
+    ]
+  },
+  "Element": {
+    "method": [
+      "scrollIntoView",
+      "scrollBy",
+      "scrollTo",
+      "getClientRects",
+      "getBoundingClientRect",
+      "computedRole",
+      "computedName",
+      "focus",
+    ],
+    "getter": [
+      "offsetLeft",
+      "offsetTop",
+      "offsetWidth",
+      "offsetHeight",
+      "offsetParent",
+      "clientLeft",
+      "clientWidth",
+      "clientHeight",
+      "scrollLeft",
+      "scrollTop",
+      "scrollWidth",
+      "scrollHeight",
+      "innerText",
+      "outerText",
+    ],
+    "setter": [
+      "scrollLeft",
+      "scrollTop",
+    ],
+  },
+  "Range": {
+    "method": [
+      "getClientRects",
+      "getBoundingClientRect",
+    ],
+  },
+  "MouseEvent": {
+    "getter": [
+      "layerX",
+      "layerY",
+      "offsetX",
+      "offsetY",
+    ],
+  },
+  "HTMLButtonElement": {
+    "method": [
+      "reportValidity",
+    ]
+  },
+  "HTMLDialogElement": {
+    "method": [
+      "showModal",
+    ]
+  },
+  "HTMLFieldSetElement": {
+    "method": [
+      "reportValidity",
+    ]
+  },
+  "HTMLImageElement": {
+    "getter": [
+      "width",
+      "height",
+      "x",
+      "y",
+    ]
+  },
+  "HTMLInputElement": {
+    "method": [
+      "reportValidity",
+    ]
+  },
+  "HTMLButtonElement": {
+    "method": [
+      "reportValidity",
+    ]
+  },
+  "HTMLKeygenElement": {
+    "method": [
+      "reportValidity",
+    ]
+  },
+  "CSSStyleDeclaration": {
+    "method": [
+      "getPropertyValue",
+    ]
+  },
+  "SVGSVGElement": {
+    "setter": [
+      "currentScale",
+    ]
+  },
+}
+
+const LayoutInstanceProperties = {
+
+};
+
+const LayoutInstanceMethods = {
+
+};
+
+})();
+</script>

@@ -1,32 +1,36 @@
 <!--
-    Declares a web worker to execute async work.
+  Declares a web worker to execute async work.
 -->
 <script>
 (function() {
 "use strict";
 
 class FxWorker extends HTMLScriptElement {
-    static get extends() { return "script" }
-    createdCallback() {
-        this.worker_ = null;
-        this.worker = new Promise(() => {
-            return this.worker_;
-        });
-    }
-    attachedCallback() {
-        if (!this.worker_)
-            this.startWorker();
-    }
-    detachedCallback() {
-        if (this.worker_)
-            this.worker_.terminate();
-    }
-    startWorker() {
-        if (this.worker_)
-            return;
-        var url = URL.createObjectURL(new Blob([this.textContent]));
-        this.worker_ = new Worker(url);
-    }
+  static get extends() { return "script" }
+
+  createdCallback() {
+    this.worker_ = null;
+    this.worker = new Promise(() => {
+      return this.worker_;
+    });
+  }
+
+  attachedCallback() {
+    if (!this.worker_)
+      this.startWorker();
+  }
+
+  detachedCallback() {
+    if (this.worker_)
+      this.worker_.terminate();
+  }
+
+  startWorker() {
+    if (this.worker_)
+      return;
+    var url = URL.createObjectURL(new Blob([this.textContent]));
+    this.worker_ = new Worker(url);
+  }
 }
 
 document.registerElement("fx-worker", FxWorker);
