@@ -5,141 +5,203 @@
 (function() {
 "use strict";
 
-function disallow() {
-  throw new Error("This method is not allowed in an FX app.");
-}
-
-function redefineGetter(proto, key, getterSynthesizer) {
-  var descriptor = Object.getOwnPropertyDescriptor(proto, key);
-  if (!descriptor || !descriptor.get)
-    throw new Error(`Unable to redefine getter ${key} on prototype ${proto}.`);
-
-  descriptor.get = getterSynthesizer(descriptor.get);
-
-  Object.defineProperty(proto, key, descriptor);
-}
-
-function define(proto, key, value) {
-  Object.defineProperty(proto, key, {
-    value: value,
-    writable: true,
-    configurable: true,
-    enumerable: true
-  });
-}
-
-const LayoutMethods = {
-  "HTMLDocument": {
-    "getter": [
-      "scrollingElement",
-    ],
-    "method": [
-      "execCommand",
-    ]
-  },
-  "Element": {
-    "method": [
-      "scrollIntoView",
-      "scrollBy",
-      "scrollTo",
-      "getClientRects",
-      "getBoundingClientRect",
-      "computedRole",
-      "computedName",
-      "focus",
-    ],
-    "getter": [
-      "offsetLeft",
-      "offsetTop",
-      "offsetWidth",
-      "offsetHeight",
-      "offsetParent",
-      "clientLeft",
-      "clientWidth",
-      "clientHeight",
-      "scrollLeft",
-      "scrollTop",
-      "scrollWidth",
-      "scrollHeight",
-      "innerText",
-      "outerText",
-    ],
-    "setter": [
-      "scrollLeft",
-      "scrollTop",
-    ],
-  },
-  "Range": {
-    "method": [
-      "getClientRects",
-      "getBoundingClientRect",
-    ],
-  },
-  "MouseEvent": {
-    "getter": [
-      "layerX",
-      "layerY",
-      "offsetX",
-      "offsetY",
-    ],
-  },
-  "HTMLButtonElement": {
-    "method": [
-      "reportValidity",
-    ]
-  },
-  "HTMLDialogElement": {
-    "method": [
-      "showModal",
-    ]
-  },
-  "HTMLFieldSetElement": {
-    "method": [
-      "reportValidity",
-    ]
-  },
-  "HTMLImageElement": {
-    "getter": [
-      "width",
-      "height",
-      "x",
-      "y",
-    ]
-  },
-  "HTMLInputElement": {
-    "method": [
-      "reportValidity",
-    ]
-  },
-  "HTMLButtonElement": {
-    "method": [
-      "reportValidity",
-    ]
-  },
-  "HTMLKeygenElement": {
-    "method": [
-      "reportValidity",
-    ]
-  },
-  "CSSStyleDeclaration": {
-    "method": [
-      "getPropertyValue",
-    ]
-  },
-  "SVGSVGElement": {
-    "setter": [
-      "currentScale",
-    ]
-  },
-}
-
-const LayoutInstanceProperties = {
-
+const ForbiddenProperties = {
+  "Document": [
+    "write",
+    "writeln",
+    "open",
+    "close",
+  ],
 };
 
-const LayoutInstanceMethods = {
-
+const LayoutProperties = {
+  "Document": [
+    "execCommand",
+    "elementFromPoint",
+    "elementsFromPoint",
+    "scrollingElement",
+  ],
+  "Element": [
+    "scrollIntoView",
+    "scrollBy",
+    "scrollTo",
+    "getClientRects",
+    "getBoundingClientRect",
+    "computedRole",
+    "computedName",
+    "focus",
+    "offsetLeft",
+    "offsetTop",
+    "offsetWidth",
+    "offsetHeight",
+    "offsetParent",
+    "clientLeft",
+    "clientWidth",
+    "clientHeight",
+    "scrollLeft",
+    "scrollTop",
+    "scrollWidth",
+    "scrollHeight",
+    "innerText",
+    "outerText",
+    "scrollLeft",
+    "scrollTop",
+  ],
+  "Range": [
+    "getClientRects",
+    "getBoundingClientRect",
+  ],
+  "MouseEvent": [
+    "layerX",
+    "layerY",
+    "offsetX",
+    "offsetY",
+  ],
+  "HTMLButtonElement": [
+    "reportValidity",
+  ],
+  "HTMLDialogElement": [
+    "showModal",
+  ],
+  "HTMLFieldSetElement": [
+    "reportValidity",
+  ],
+  "HTMLImageElement": [
+    "width",
+    "height",
+    "x",
+    "y",
+  ],
+  "HTMLInputElement": [
+    "reportValidity",
+  ],
+  "HTMLButtonElement": [
+    "reportValidity",
+  ],
+  "HTMLKeygenElement": [
+    "reportValidity",
+  ],
+  "CSSStyleDeclaration": [
+    "getPropertyValue",    
+  ],
+  "SVGSVGElement": [
+    "currentScale",
+  ],
 };
+
+const LayoutWindowProperties = [
+  "innerHeight",
+  "innerWidth",
+  "scrollX",
+  "scrollY",
+  "scrollBy",
+  "scrollTo",
+];
+
+const ForbiddenWindowProperties = [
+  "alert",
+  "prompt",
+  "confirm",
+  "find",
+  "getMatchedCSSRules",
+];
+
+function processPrototypes(map, options) {
+  var handleAccessor = options.handleAccessor;
+  var handleValue = options.handleValue;
+  for (var typeName in ForbiddenProperties) {
+    var typeConstructor = window[typeName];
+    if (!typeConstructor)
+      continue;
+    var prototype = typeConstructor.prototype;
+    if (!prototype)
+      continue;
+    var properties = ForbiddenProperties[typeName];
+    for (var i = 0; i < properties.length; ++i) {
+      var propertyName = properties[i];
+      var descriptor = Object.getOwnPropertyDescriptor(prototype, propertyName);
+      var newDescriptor;
+      if (descriptor.get || descriptor.set)
+        newDescriptor = handleAccessor(prototype, propertyName, descriptor);
+      else if (descriptor.value) {
+        newDescriptor = handleValue(prototype, propertyName, descriptor);
+      }
+      if (newDescriptor)
+        Object.defineProperty(prototype, propertyName, descriptor);
+    }
+  }
+}
+
+const READ_MODE = 0;
+const WRITE_MODE = 1;
+
+var currentMode = READ_MODE;
+
+function forbidden(propertyName) {
+  throw new Error(`${propertyName} is forbidden.`);
+}
+
+function readOnly(propertyName) {
+  if (currentMode != READ_MODE)
+    throw new Error(`${propertyName} is not allowed in write mode.`);
+}
+
+function writeOnly(propertyName) {
+  if (currentMode != WRITE_MODE)
+    throw new Error(`${propertyName} is not allowed in read mode.`);
+}
+
+processPrototypes(LayoutProperties, {
+  handleAccessor: function(prototype, descriptor, propertyName) {
+      var get = descriptor.get;
+      var set = descriptor.set;
+      if (get) {
+        descriptor.get = function() {
+          readOnly(propertyName);
+          return get.apply(this, arguments);
+        };
+      }
+      if (set) {
+        descriptor.set = function() {
+          writeOnly(propertyName);
+          return set.apply(this, arguments);
+        };
+      }
+      return descriptor;
+  },
+  handleValue: function(prototype, descriptor, propertyName) {
+    var value = descriptor.value;
+    if (typeof value != "function")
+      return;
+    descriptor.value = function() {
+      readOnly(propertyName);
+      return value.apply(this, arguments);
+    };
+    return descriptor;
+  },
+});
+
+processPrototypes(ForbiddenProperties, {
+  handleAccessor: function(prototype, descriptor, propertyName) {
+    var get = descriptor.get;
+    var set = descriptor.set;
+    function forbidProperty() {
+      forbidden(propertyName);
+    };
+    descriptor.get = forbidProperty;
+    descriptor.set = forbidProperty;
+    return descriptor;
+  },
+  handleValue: function(prototype, descriptor, propertyName) {
+    var value = descriptor.value;
+    if (typeof value != "function")
+      return;
+    descriptor.value = function() {
+      forbidden(propertyName);
+    };
+    return descriptor;
+  },
+});
 
 })();
 </script>
