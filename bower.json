@@ -8,8 +8,7 @@
   "license": "https://chromium.googlesource.com/chromium/src.git/+/master/LICENSE",
   "private": true,
   "dependencies": {
-    "polymer": "Polymer/polymer",
-    "sugar": "andrewplummer/sugar#~1.4.1"
+    "sugar": "andrewplummer/sugar"
   },
   "ignore": [
     "**/.*",
