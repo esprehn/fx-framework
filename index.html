@@ -2,6 +2,7 @@
 
 <link rel="import" href="fx-lifecycle.html">
 <link rel="import" href="fx-worker.html">
+<link rel="import" href="fx-element.html">
 
 <script is="fx-worker" type="worker" id="logWorker">
     console.log(this);
@@ -11,7 +12,22 @@
 <div id="second"></div>
 
 <script>
+"use strict";
 var worker = logWorker.startWorker();
+
+var AppTestElement = (class extends FxElement {
+    static get tagName() { return "app-test"; }
+
+    created() {
+        this.style.display = "block";
+    }
+
+    attached() {
+        FxDom.write(() => {
+            this.textContent = "Test Element";
+        });
+    }
+}).register();
 
 var first = document.getElementById("first");
 var second = document.getElementById("second");
@@ -21,6 +37,7 @@ FxDom.write(() => {
     requestAnimationFrame(() => {
         first.textContent = "Nope";
     });
+    first.appendChild(new AppTestElement());
     requestAnimationFrame(() => {
         var height;
         FxDom.read(() => {
