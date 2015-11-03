@@ -3,7 +3,7 @@
 <link rel="import" href="fx-lifecycle.html">
 <link rel="import" href="fx-worker.html">
 
-<script is="fx-worker" type="worker">
+<script is="fx-worker" type="worker" id="logWorker">
     console.log(this);
 </script>
 
@@ -11,6 +11,8 @@
 <div id="second"></div>
 
 <script>
+var worker = logWorker.startWorker();
+
 var first = document.getElementById("first");
 var second = document.getElementById("second");
 FxDom.write(() => {

@@ -12,21 +12,13 @@ class FxWorker extends HTMLScriptElement {
     this.worker_ = null;
   }
 
-  attachedCallback() {
-    if (!this.worker_)
-      this.startWorker();
-  }
-
-  detachedCallback() {
-    if (this.worker_)
-      this.worker_.terminate();
-  }
-
   startWorker() {
-    if (this.worker_)
-      return;
-    var url = URL.createObjectURL(new Blob([this.textContent]));
-    this.worker_ = new Worker(url);
+    if (!this.worker_) {
+      var url = URL.createObjectURL(new Blob([this.textContent]));
+      this.worker_ = new Worker(url);
+      URL.revokeObjectURL(url);
+    }
+    return this.worker_;
   }
 }
 
