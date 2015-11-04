@@ -13,6 +13,8 @@ const WRITE = 2;
 // These are special types of handler that map to states.
 const ACCESSOR = 3;
 const VALUE = 4;
+const INLINE_STYLE = 5;
+const COMPUTED_STYLE = 6;
 
 const PrototypeProperties = {
   "Document": [
@@ -62,6 +64,8 @@ const PrototypeProperties = {
     ["innerText", ACCESSOR],
     ["outerText", ACCESSOR],
     ["focus", ACCESSOR],
+    ["blur", ACCESSOR],
+    ["style", INLINE_STYLE],
   ],
   "CharacterData": [
     ["remove", WRITE],
@@ -127,6 +131,7 @@ const InstanceProperties = {
     ["confirm", FORBIDDEN],
     ["find", FORBIDDEN],
     ["getMatchedCSSRules", FORBIDDEN],
+    ["getComputedStyle", COMPUTED_STYLE],
   ],
 };
 
@@ -212,6 +217,74 @@ function handleValue(descriptor, propertyName) {
   return descriptor;
 }
 
+var getStyle = (function() {
+  var styleGetter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "style").get;
+  return function(element) {
+    return styleGetter.call(element);
+  };
+})();
+
+// This doesn't expose the concept of !important in inline style, but honestly
+// you shouldn't do that anyway.
+class FxInlineStyle {
+  constructor(element) {
+    this.element = element;
+  }
+  set cssText(value) {
+    if (currentState != WRITE)
+      throw new Error(`Can only set cssText inside FxDom.write.`);
+    getStyle(this.element).cssText = value;
+  }
+  get cssText() {
+    return getStyle(this.element).cssText;
+  }
+  get(propertyName) {
+    return getStyle(this.element).getPropertyValue(propertyName);
+  }
+  set(propertyName, value) {
+    if (currentState != WRITE)
+      throw new Error(`Can only set inline style inside FxDom.write.`);
+    getStyle(this.element).setProperty(propertyName, value);
+  }
+  delete(propertyName) {
+    if (currentState != WRITE)
+      throw new Error(`Can only remove style properties inside FxDom.write.`);
+    getStyle(this.element).removeProperty(propertyName);
+  }
+}
+
+function handleInlineStyle(descriptor, propertyName) {
+  descriptor.get = function() {
+    return new FxInlineStyle(this);
+  }
+  return descriptor;
+}
+
+var getComputedStyle = window.getComputedStyle;
+
+class FxComputedStyle {
+  constructor(element) {
+    this.element = element;
+  }
+  get cssText() {
+    if (currentState != READ)
+      throw new Error(`Can only get cssText inside FxDom.read.`);
+    return getComputedStyle(this.element).cssText;
+  }
+  get(propertyName) {
+    if (currentState != READ)
+      throw new Error(`Can only get style properties inside FxDom.read.`);
+    return getComputedStyle(this.element).getPropertyValue(propertyName);
+  }
+}
+
+function handleComputedStyle(descriptor, propertyName) {
+  descriptor.value = function(element) {
+    return new FxComputedStyle(element);
+  }
+  return descriptor;
+}
+
 // This follows the enum order.
 const HandlerMap = [
   handleForbidden,
@@ -219,6 +292,8 @@ const HandlerMap = [
   handleWrite,
   handleAccessor,
   handleValue,
+  handleInlineStyle,
+  handleComputedStyle,
 ];
 
 function processMap(map, lookupCallback) {

@@ -19,7 +19,9 @@ var AppTestElement = (class extends FxElement {
     static get tagName() { return "app-test"; }
 
     createdCallback() {
-        this.style.display = "block";
+        FxDom.write(() => {
+            this.style.set("display", "block");
+        });
     }
 
     attachedCallback() {
@@ -34,9 +36,9 @@ var second = document.getElementById("second");
 FxDom.write(() => {
     first.innerHTML = "Hello World";
     // nested raf.
-    requestAnimationFrame(() => {
-        first.textContent = "Nope";
-    });
+    // requestAnimationFrame(() => {
+    //     first.textContent = "Nope";
+    // });
     first.appendChild(new AppTestElement());
     requestAnimationFrame(() => {
         var height;
