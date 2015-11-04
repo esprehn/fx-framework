@@ -16,6 +16,7 @@ const VALUE = 4;
 const INLINE_STYLE = 5;
 const COMPUTED_STYLE = 6;
 const CLASS_LIST = 7;
+const DATASET = 8;
 
 const PrototypeProperties = {
   "Document": [
@@ -72,6 +73,7 @@ const PrototypeProperties = {
     ["focus", ACCESSOR],
     ["blur", ACCESSOR],
     ["style", INLINE_STYLE],
+    ["dataset", DATASET],
   ],
   "CharacterData": [
     ["remove", WRITE],
@@ -307,21 +309,21 @@ class FxClassList {
   }
   add(className) {
     if (currentState != WRITE)
-      throw new Error(`Can only get style properties inside FxDom.write.`);
-    return getClassList(this.element).add(className);
+      throw new Error(`Can only add class names inside FxDom.write.`);
+    getClassList(this.element).add(className);
   }
   has(className) {
     return getClassList(this.element).contains(className);
   }
   delete(className) {
     if (currentState != WRITE)
-      throw new Error(`Can only get style properties inside FxDom.write.`);
+      throw new Error(`Can only remove class names inside FxDom.write.`);
     getClassList(this.element).remove(className);
   }
   // Extensions to the Set like interface:
   toggle(className) {
     if (currentState != WRITE)
-      throw new Error(`Can only get style properties inside FxDom.write.`);
+      throw new Error(`Can only toggle class names inside FxDom.write.`);
     return getClassList(this.element).toggle(className);
   }
   // Extensions to the Set like interface:
@@ -341,6 +343,46 @@ function handleClassList(descriptor, propertyName) {
   return descriptor;
 }
 
+var getDataset = (function() {
+  var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "dataset").get;
+  return function getDataset(element) {
+    return getter.call(element);
+  };
+})();
+
+class FxDataset {
+  constructor(element) {
+    this.element = element;
+  }
+  get(name) {
+    return getDataset(this.element)[name];
+  }
+  set(name, value) {
+    if (currentState != WRITE)
+      throw new Error(`Can only set dataset values inside FxDom.write.`);
+    getDataset(this.element)[name] = value;
+  }
+  has(name) {
+    var dataset = getDataset(this.element);
+    return name in dataset;
+  }
+  delete(name) {
+    var dataset = getDataset(this.element);
+    delete dataset[name];
+  }
+  // TODO(esprehn): Replace with .entries().
+  getKeys() {
+    return Object.keys(getDataset(this.element));
+  }
+}
+
+function handleDataset(descriptor, propertyName) {
+  descriptor.get = function() {
+    return new FxDataset(this);
+  };
+  return descriptor;
+}
+
 // This follows the enum order.
 const HandlerMap = [
   handleForbidden,
@@ -351,6 +393,7 @@ const HandlerMap = [
   handleInlineStyle,
   handleComputedStyle,
   handleClassList,
+  handleDataset,
 ];
 
 // We forbid access to Element#attributes and force you to use
