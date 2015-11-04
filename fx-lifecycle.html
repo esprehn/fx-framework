@@ -54,6 +54,9 @@ const PrototypeProperties = {
     ["outerHTML", WRITE],
     ["insertAdjacentHTML", WRITE],
     ["remove", WRITE],
+    ["setAttribute", WRITE],
+    ["removeAttribute", WRITE],
+    ["attributes", FORBIDDEN],
   ],
   "HTMLElement": [
     ["offsetLeft", ACCESSOR],
@@ -256,7 +259,7 @@ class FxInlineStyle {
 function handleInlineStyle(descriptor, propertyName) {
   descriptor.get = function() {
     return new FxInlineStyle(this);
-  }
+  };
   return descriptor;
 }
 
@@ -281,7 +284,7 @@ class FxComputedStyle {
 function handleComputedStyle(descriptor, propertyName) {
   descriptor.value = function(element) {
     return new FxComputedStyle(element);
-  }
+  };
   return descriptor;
 }
 
@@ -295,6 +298,18 @@ const HandlerMap = [
   handleInlineStyle,
   handleComputedStyle,
 ];
+
+// We forbid access to Element#attributes and force you to use
+// setAttribute/getAttribute/removeAttribute/hasAttribute and then add a new
+// method getAttributeNames().
+var attributesGetter = Object.getOwnPropertyDescriptor(Element.prototype, "attributes").get;
+Element.prototype.getAttributeNames = function() {
+  var attributes = attributesGetter.call(this);
+  var result = [];
+  for (var i = 0; i < attributes.length; ++i)
+    result.push(attributes[i].name);
+  return result;
+};
 
 function processMap(map, lookupCallback) {
   for (var typeName in map) {
