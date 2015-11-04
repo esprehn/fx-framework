@@ -18,11 +18,11 @@ var worker = logWorker.startWorker();
 var AppTestElement = (class extends FxElement {
     static get tagName() { return "app-test"; }
 
-    created() {
+    createdCallback() {
         this.style.display = "block";
     }
 
-    attached() {
+    attachedCallback() {
         FxDom.write(() => {
             this.textContent = "Test Element";
         });

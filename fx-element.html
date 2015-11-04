@@ -6,35 +6,15 @@
 "use strict";
 
 class FxElement extends HTMLElement {
+  static get tagName() {
+    throw new Error("Subclasses of FxElement must override get tagName().");
+  }
+
   static register() {
-    if (!this.prototype.created)
-      this.prototype.createdCallback = undefined;
-    if (!this.prototype.attached)
-      this.prototype.attachedCallback = undefined;
-    if (!this.prototype.detached)
-      this.prototype.detachedCallback = undefined;
-    if (!this.prototype.attributeChangedCallback)
-      this.prototype.attributeChanged = undefined;
     return document.registerElement(this.tagName, {
       extends: this.extends,
       prototype: this.prototype,
     });
-  }
-
-  createdCallback() {
-    this.created();
-  }
-
-  attachedCallback() {
-    this.attached();
-  }
-
-  detachedCallback() {
-    this.detached();
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    this.attributeChanged(name, oldValue, newValue);
   }
 }
 
