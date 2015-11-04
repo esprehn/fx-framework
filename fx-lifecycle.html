@@ -327,7 +327,7 @@ class FxClassList {
     return getClassList(this.element).toggle(className);
   }
   // Extensions to the Set like interface:
-  getAll() {
+  getNames() {
     var classes = getClassList(this.element);
     var result = [];
     for (var i = 0; i < classes.length; ++i)
