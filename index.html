@@ -20,12 +20,7 @@ var AppTestElement = (class extends FxElement {
 
   createdCallback() {
     this.style.set("display", "block");
-  }
-
-  attachedCallback() {
-    FxDom.write(() => {
-      this.textContent = "Test Element";
-    });
+    this.textContent = "Test Element";
   }
 }).register();
 
@@ -33,7 +28,6 @@ var first = document.getElementById("first");
 var second = document.getElementById("second");
 
 first.innerHTML = "Hello World";
-
 first.appendChild(new AppTestElement());
 
 requestAnimationFrame(() => {
