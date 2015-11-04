@@ -5,7 +5,7 @@
 <link rel="import" href="fx-element.html">
 
 <script is="fx-worker" type="worker" id="logWorker">
-    console.log(this);
+  console.log(this);
 </script>
 
 <div id="first"></div>
@@ -16,38 +16,33 @@
 var worker = logWorker.startWorker();
 
 var AppTestElement = (class extends FxElement {
-    static get tagName() { return "app-test"; }
+  static get tagName() { return "app-test"; }
 
-    createdCallback() {
-        FxDom.write(() => {
-            this.style.set("display", "block");
-        });
-    }
+  createdCallback() {
+    this.style.set("display", "block");
+  }
 
-    attachedCallback() {
-        FxDom.write(() => {
-            this.textContent = "Test Element";
-        });
-    }
+  attachedCallback() {
+    FxDom.write(() => {
+      this.textContent = "Test Element";
+    });
+  }
 }).register();
 
 var first = document.getElementById("first");
 var second = document.getElementById("second");
-FxDom.write(() => {
-    first.innerHTML = "Hello World";
-    // nested raf.
-    // requestAnimationFrame(() => {
-    //     first.textContent = "Nope";
-    // });
-    first.appendChild(new AppTestElement());
-    requestAnimationFrame(() => {
-        var height;
-        FxDom.read(() => {
-            height = document.body.clientHeight;
-        });
-        FxDom.write(() => {
-            second.textContent = `Body height is ${height}`;
-        });
-    });
+
+first.innerHTML = "Hello World";
+
+first.appendChild(new AppTestElement());
+
+requestAnimationFrame(() => {
+  var height;
+  FxDom.read(() => {
+    height = document.body.clientHeight;
+  });
+  FxDom.write(() => {
+    second.textContent = `Body height is ${height}`;
+  });
 });
 </script>

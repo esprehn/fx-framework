@@ -5,12 +5,9 @@
 (function() {
 "use strict";
 
-// These are also states.
 const FORBIDDEN = 0;
 const READ = 1;
 const WRITE = 2;
-
-// These are special types of handler that map to states.
 const ACCESSOR = 3;
 const VALUE = 4;
 const INLINE_STYLE = 5;
@@ -143,7 +140,7 @@ const InstanceProperties = {
   ],
 };
 
-var currentState = FORBIDDEN;
+var currentState = WRITE;
 
 function handleForbidden(descriptor, propertyName) {
   function forbidden() {
@@ -498,8 +495,8 @@ function processQueue(queue) {
 }
 
 function processQueues() {
-  if (currentState != FORBIDDEN)
-    throw new Error(`Invalid lifecycle state ${currentState}`);
+  if (currentState != WRITE)
+    throw new Error(`Invalid lifecycle state ${currentState}, must be ${WRITE}`);
   while (readQueue.length || writeQueue.length) {
     if (readQueue.length) {
       var currentReadQueue = readQueue;
@@ -514,7 +511,7 @@ function processQueues() {
       processQueue(currentWriteQueue);
     }
   }
-  currentState = FORBIDDEN;
+  currentState = WRITE;
   didScheduleQueues = false;
 }
 
