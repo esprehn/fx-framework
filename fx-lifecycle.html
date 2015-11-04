@@ -15,6 +15,7 @@ const ACCESSOR = 3;
 const VALUE = 4;
 const INLINE_STYLE = 5;
 const COMPUTED_STYLE = 6;
+const CLASS_LIST = 7;
 
 const PrototypeProperties = {
   "Document": [
@@ -57,6 +58,8 @@ const PrototypeProperties = {
     ["setAttribute", WRITE],
     ["removeAttribute", WRITE],
     ["attributes", FORBIDDEN],
+    ["className", WRITE],
+    ["classList", CLASS_LIST],
   ],
   "HTMLElement": [
     ["offsetLeft", ACCESSOR],
@@ -221,9 +224,9 @@ function handleValue(descriptor, propertyName) {
 }
 
 var getStyle = (function() {
-  var styleGetter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "style").get;
-  return function(element) {
-    return styleGetter.call(element);
+  var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "style").get;
+  return function getStyle(element) {
+    return getter.call(element);
   };
 })();
 
@@ -243,6 +246,9 @@ class FxInlineStyle {
   }
   get(propertyName) {
     return getStyle(this.element).getPropertyValue(propertyName);
+  }
+  has(propertyName) {
+    return this.get(propertyName) !== "";
   }
   set(propertyName, value) {
     if (currentState != WRITE)
@@ -288,6 +294,53 @@ function handleComputedStyle(descriptor, propertyName) {
   return descriptor;
 }
 
+var getClassList = (function() {
+  var getter = Object.getOwnPropertyDescriptor(Element.prototype, "classList").get;
+  return function getClassList(element) {
+    return getter.call(element);
+  };
+})();
+
+class FxClassList {
+  constructor(element) {
+    this.element = element;
+  }
+  add(className) {
+    if (currentState != WRITE)
+      throw new Error(`Can only get style properties inside FxDom.write.`);
+    return getClassList(this.element).add(className);
+  }
+  has(className) {
+    return getClassList(this.element).contains(className);
+  }
+  delete(className) {
+    if (currentState != WRITE)
+      throw new Error(`Can only get style properties inside FxDom.write.`);
+    getClassList(this.element).remove(className);
+  }
+  // Extensions to the Set like interface:
+  toggle(className) {
+    if (currentState != WRITE)
+      throw new Error(`Can only get style properties inside FxDom.write.`);
+    return getClassList(this.element).toggle(className);
+  }
+  // Extensions to the Set like interface:
+  getAll() {
+    var classes = getClassList(this.element);
+    var result = [];
+    for (var i = 0; i < classes.length; ++i)
+      result.push(classes[i]);
+    return result;
+  }
+}
+
+function handleClassList(descriptor, propertyName) {
+  descriptor.get = function() {
+    return new FxClassList(this);
+  };
+  return descriptor;
+}
+
 // This follows the enum order.
 const HandlerMap = [
   handleForbidden,
@@ -297,6 +350,7 @@ const HandlerMap = [
   handleValue,
   handleInlineStyle,
   handleComputedStyle,
+  handleClassList,
 ];
 
 // We forbid access to Element#attributes and force you to use
