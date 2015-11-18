@@ -221,7 +221,7 @@ function handleValue(descriptor, propertyName) {
   return descriptor;
 }
 
-var getStyle = (function() {
+var getStyle = (function createGetStyle() {
   var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "style").get;
   return function getStyle(element) {
     return getter.call(element);
@@ -292,7 +292,7 @@ function handleComputedStyle(descriptor, propertyName) {
   return descriptor;
 }
 
-var getClassList = (function() {
+var getClassList = (function createGetClassList() {
   var getter = Object.getOwnPropertyDescriptor(Element.prototype, "classList").get;
   return function getClassList(element) {
     return getter.call(element);
@@ -339,7 +339,7 @@ function handleClassList(descriptor, propertyName) {
   return descriptor;
 }
 
-var getDataset = (function() {
+var getDataset = (function createGetDataset() {
   var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "dataset").get;
   return function getDataset(element) {
     return getter.call(element);
@@ -482,7 +482,7 @@ function callIgnoringError(callback) {
     callback();
   } catch (e) {
     // rethrow in a clean callstack.
-    setTimeout(function() {
+    setTimeout(function rethrow() {
       throw e;
     });
   }
