@@ -3,6 +3,7 @@
 <link rel="import" href="fx-lifecycle.html">
 <link rel="import" href="fx-worker.html">
 <link rel="import" href="fx-element.html">
+<link rel="import" href="fx-widget.html">
 
 <script is="fx-worker" type="worker" id="logWorker">
   console.log(this);
@@ -15,14 +16,35 @@
 "use strict";
 var worker = logWorker.startWorker();
 
-var AppTestElement = (class extends FxElement {
+var AppTestElement = class extends FxElement {
   static get tagName() { return "app-test"; }
 
   createdCallback() {
     this.style.set("display", "block");
     this.textContent = "Test Element";
   }
-}).register();
+}.register();
+
+var ExampleService = class extends FxService {
+  static get serviceName() { return "my-service"; }
+  attachedCallback() {
+    super.attachedCallback();
+  }
+  detachedCallback() {
+    super.detachedCallback();
+  }
+}.register();
+
+var SimpleWidget = class SimpleWidget extends FxWidget {
+  static get tagName() { return "simple-widget"; }
+
+  createdCallback() {
+    super.createdCallback();
+    this.addService(new ExampleService());
+  }
+}.register();
+
+document.body.appendChild(new SimpleWidget());
 
 var first = document.getElementById("first");
 var second = document.getElementById("second");

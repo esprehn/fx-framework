@@ -141,6 +141,10 @@ const InstanceProperties = {
 
 var currentState = WRITE;
 
+function getOwnPropertyGetter(type, name) {
+  return Object.getOwnPropertyDescriptor(type, name).get;
+}
+
 function handleForbidden(descriptor, propertyName) {
   function forbidden() {
     throw new Error(`${propertyName} is forbidden.`);
@@ -222,7 +226,7 @@ function handleValue(descriptor, propertyName) {
 }
 
 var getStyle = (function createGetStyle() {
-  var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "style").get;
+  var getter = getOwnPropertyGetter(HTMLElement.prototype, "style");
   return function getStyle(element) {
     return getter.call(element);
   };
@@ -293,7 +297,7 @@ function handleComputedStyle(descriptor, propertyName) {
 }
 
 var getClassList = (function createGetClassList() {
-  var getter = Object.getOwnPropertyDescriptor(Element.prototype, "classList").get;
+  var getter = getOwnPropertyGetter(Element.prototype, "classList");
   return function getClassList(element) {
     return getter.call(element);
   };
@@ -340,7 +344,7 @@ function handleClassList(descriptor, propertyName) {
 }
 
 var getDataset = (function createGetDataset() {
-  var getter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "dataset").get;
+  var getter = getOwnPropertyGetter(HTMLElement.prototype, "dataset");
   return function getDataset(element) {
     return getter.call(element);
   };

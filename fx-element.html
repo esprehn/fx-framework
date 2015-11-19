@@ -9,12 +9,19 @@ class FxElement extends HTMLElement {
   static get tagName() {
     throw new Error("Subclasses of FxElement must override get tagName().");
   }
-
   static register() {
     return document.registerElement(this.tagName, {
       extends: this.extends,
       prototype: this.prototype,
     });
+  }
+  get ownerScope() {
+    var scope = this.parentNode;
+    if (!scope || !this.ownerDocument.contains(this))
+      return this.ownerDocument;
+    while (scope.parentNode)
+      scope = scope.parentNode;
+    return scope
   }
 }
 
